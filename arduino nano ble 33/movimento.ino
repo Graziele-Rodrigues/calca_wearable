@@ -23,7 +23,7 @@ TfLiteTensor* tflOutputTensor = nullptr;
 constexpr int tensorArenaSize = 8 * 1024;
 byte tensorArena[tensorArenaSize] __attribute__((aligned(16)));
 
-const char* GESTURES[] = {"caminhando", "pulando", "parado"};
+const char* GESTURES[] = {"walking", "jumping", "standing"};
 #define NUM_GESTURES (sizeof(GESTURES) / sizeof(GESTURES[0]))
 
 void setup() {
@@ -51,6 +51,9 @@ void setup() {
 }
 
 void loop() {
+  // Variáveis para medir o tempo
+  unsigned long startTime, endTime;
+
   // Preenche os dados de entrada com as amostras simuladas
   for (int blockIndex = 0; blockIndex < 12; blockIndex++) {  // 12 blocos de 20 amostras
     int baseIndex = blockIndex * numSamples;  // Base index para cada bloco de 20 amostras
@@ -67,15 +70,22 @@ void loop() {
       tflInputTensor->data.f[sampleIndex * 6 + 4] = (dummyData[dataIndex][4] + 2000.0) / 4000.0;  // Giroscópio Y
       tflInputTensor->data.f[sampleIndex * 6 + 5] = (dummyData[dataIndex][5] + 2000.0) / 4000.0;  // Giroscópio Z
     }
-
+    // Medir o tempo antes da inferência
+    startTime = micros();
     // Realiza a inferência para o bloco atual de 20 amostras
     TfLiteStatus invokeStatus = interpreter->Invoke();
+    // Medir o tempo após a inferência
+    unsigned long endTime = micros();
     if (invokeStatus != kTfLiteOk) {
       Serial.println("Invoke failed!");
       while (1);
       return;
     }
 
+    // Calcula e exibe a latência de inferência
+    unsigned long inferenceTime = endTime - startTime;
+    Serial.print("Inference Time (microseconds): ");
+    Serial.println(inferenceTime);
     // Processa os resultados da inferência para este bloco
     float maxScore = 0;
     int maxIndex = -1;
@@ -93,7 +103,7 @@ void loop() {
 
     // Exibe o gesto detectado para o bloco
     if (maxIndex != -1) {
-      Serial.print("Gesto detectado: ");
+      Serial.print("Moviment detect: ");
       Serial.println(GESTURES[maxIndex]);
     }
 
